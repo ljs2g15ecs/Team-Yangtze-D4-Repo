@@ -26,31 +26,28 @@ float filtered_pitch, filtered_roll;
 float kpx, kix, kdx, servo_out_x, measured_x, setpoint_x, prev_error_x, p_error_x, i_error_x, d_error_x;
 float kpy, kiy, kdy, servo_out_y, measured_y, setpoint_y, prev_error_y, p_error_y, i_error_y, d_error_y;
 
-int Throttle=0;
-byte Roll, Pitch, Yaw;
+int Throttle,Roll, Pitch, Yaw;
 
-Servo pitch,roll;                                                           //Initialize 'servo' as a servo
+Servo servo;                                                           //Initialize 'servo' as a servo
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  kpx = 0.7;
-  kix = 0.01;
-  kdx = 0.2;
+  kpx = 1;
+  kix = 1;
+  kdx = 0.01;
   setpoint_x = 0;
 
   kpy = 0.7;
   kiy = 0.01;
   kdy = 0.2;
   setpoint_y = 0;  
-  
-  delay(10);                                                           //Startup delay to allow for settling
+
   pinMode(5, OUTPUT);                                                  //Set pin 5 as output
-  pitch.attach(5);                                                     //Attach 'pitch servo' to pin 5
+  servo.attach(5);                                                     //Attach 'pitch servo' to pin 5
   Wire.begin();                                                        //start I2C. No address means master
-  //Wire.onReceive(receiveEvent);
-  //Serial.begin(57600);                                               //Serial for debugging
+  Serial.begin(57600);                                               //Serial for debugging
   
-  setup_registers();                                                   //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
+  setup_IMU_registers();                                                   //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
   calibrate_MPU6050();                                                 //Run calibration procedure for gyro offsets
   
   loop_timer = micros();                                               //Reset the loop timer. To be used to keep a constant loop-time. Replacement for interrupts in this situation
@@ -98,9 +95,9 @@ void loop(){
   //Serial.print(filtered_pitch);
   //Serial.print("  ");
   //Serial.println(filtered_roll);
-  //Serial.println(micros() - loop_timer);
-
-  servo_out_x = pid_x(setpoint_x,filtered_pitch);
+  
+  receiveControl();
+  servo_out_x = pid_x(filtered_pitch,Throttle);
   
   if(servo_out_x>180){
     servo_out_x = 180;
@@ -108,20 +105,24 @@ void loop(){
   else if(servo_out_x<0){
     servo_out_x = 0;
   }
-  pitch.write(servo_out_x);
-  //Serial.print(Throttle);
-  //Serial.print("xc");
+  
+  servo.write(servo_out_x);
+  //Serial.println(Throttle);
+  //Serial.print("  ");
+  //Serial.print(servo_out_x);
+  //Serial.print(" ");
   //Serial.print(Roll);
   //Serial.print(" ");
   //Serial.print(Pitch);
   //Serial.print(" ");
   //Serial.println(Yaw);
-  
+
+  //Serial.println(micros() - loop_timer);
   while(micros() - loop_timer < 4000);                                 //Wait until the loop_timer reaches 4000us (250Hz) before starting the next loop
   loop_timer = micros();                                               //Reset the loop timer
 }
 
-void setup_registers(){
+void setup_IMU_registers(){
   //Activate  MPU6050
   Wire.beginTransmission(0x68);                                        //Address the MPU6050
   Wire.write(0x6B);                                                    //Address the PWR_MGMT_1 register
@@ -182,17 +183,18 @@ void read_mpu6050(){
 }
 
 float pid_x(float meas,float set){
-  p_error_x = set-meas;
-  i_error_x += p_error_x*0.004;
-  d_error_x = (prev_error_x-p_error_x)0.004;
+  p_error_x = meas-set;
+  i_error_x += (p_error_x*0.04);
+  d_error_x = (prev_error_x-p_error_x)/0.04;
   return (kpx*p_error_x)+(kix*i_error_x)-(kdx*d_error_x);
   prev_error_x = p_error_x;
 }
 
-//void receiveEvent(int howMany) {
-//  while(Wire.available() < 4);
-//  Throttle  = Wire.read()<<1|Wire.read();
-//  Roll      = Wire.read()<<1|Wire.read();
-//  Pitch     = Wire.read()<<1|Wire.read();
-//  Yaw       = Wire.read()<<1|Wire.read();
-//}
+void receiveControl(){
+  Wire.requestFrom(1,4);
+  while(Wire.available() < 4);
+  Throttle  = Wire.read();
+  Roll      = Wire.read();
+  Pitch     = Wire.read();
+  Yaw       = Wire.read();
+}
