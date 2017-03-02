@@ -31,6 +31,12 @@ void setup()
   Wire.onReceive(receiveEvent);         //  Register data receive event
 
   BT.begin(9600);                       //  Setup BT Serial
+
+  int i;
+  for(i=0; i<4; i++)
+  {
+    QuadData[i] = 127;
+  }
 }
 
 void loop()
@@ -82,7 +88,6 @@ void showNewData()
   if (newData == true)
   {
     parseData();
-    printData();
     newData = false;
   }
 }
@@ -116,14 +121,25 @@ void parseXY()                          //  !X###Y###
 
 void printData()
 {
+  /*
   Serial.print("\nThrottle  = ");
   Serial.print(QuadData[0]);
-  Serial.print("  | Roll  = ");
+  Serial.print("\t|\tRoll  = ");
   Serial.print(QuadData[1]);
-  Serial.print("  | Pitch = ");
+  Serial.print("\t|\tPitch = ");
   Serial.print(QuadData[2]);
-  Serial.print("  | Yaw = ");
+  Serial.print("\t|\tYaw = ");
   Serial.print(QuadData[3]);
+  //*/
+
+  ///*
+  Serial.print( "\nX: " );
+  Serial.print( XYZ[0] );
+  Serial.print( "\tY: " );
+  Serial.print( XYZ[1] );
+  Serial.print( "\tZ: " );
+  Serial.print( XYZ[2] );
+  //*/
 }
 
 void requestEvent()
@@ -139,6 +155,9 @@ void receiveEvent(int n)
     XYZ[i] = Wire.read();                 //  Store in XYZ array
     i++;
   }
+
+  Serial.print("\n\tNEW DATA!!!\t\n");
+  printData();
 
   sendData();
 }
