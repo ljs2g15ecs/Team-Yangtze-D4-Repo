@@ -4,6 +4,8 @@ byte  QuadData[4];                        //  [0] = Throttle  | [1] = Roll  | [2
 int   xyz[3];                             //  Accelerometer Data
 byte  XYZ[3];                             //  Mapped accelerometer data
 
+volatile boolean s;
+
 
 void setup()
 {
@@ -26,12 +28,14 @@ void setup()
   TIMSK1 |= (1 << OCIE1A);                //  Enable timer compare interupt
   sei();                                  //  Enable interupts
 
+  s = false;
+
   pinMode(13, OUTPUT);
 }
 
 ISR(TIMER1_COMPA_vect)
 {
-  //sendData();
+  s = true;
   digitalWrite(13, digitalRead(13) ^ 1);
 }
 
@@ -40,8 +44,13 @@ void loop()
   recData();
   accelData();
 
-  printData();
-  sendData();
+  //printData();
+  if(s)
+  {
+    sendData();
+    s = false;
+  }
+  
 }
 
 void recData()
