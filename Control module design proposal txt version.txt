@@ -1,0 +1,9 @@
+Control module design proposal
+The purpose of the control module is to take the commands passed over the communications and pass the correct values to the motors to fulfil the commands. To achieve this, our module will use a PID control loop (Proportional Integral Derivative) to remove the error between the measured values from the on-board instruments (an accelerometer and gyroscope) and the desired values passed over control. The module will be run from an Arduino, because an Arduino is small, light and efficient and cheap.
+The control module should have:
+•	A loop frequency of no less than 250 Hz. This will ensure that the drone control loop will be fast enough to respond to variations while keeping the drone airborne.
+•	A PID basis. This is because PID control provides faster stabilisation times than P or PD control, and easy to program on the software we are using.
+•	The ability to hold the quad-copter steady upon receiving the command to do so, and hold steady as long as the command is maintained.
+•	Physical communication using the I2C protocol with the communications module.
+•	Feedback from additional devices (a barometer, IR proximity sensors) from which the drone can assume control. For example, should an IR proximity sensor detect a wall in front of the drone, the drone will stop rather than crash into the wall.
+•	Set commands which allow the drone to perform certain actions automatically, without any more data from the user. For example, under a certain command the drone might land by itself. This, and the previous point, should use a second Arduino to process the data so that the loop frequency is not compromised by the calculations. This second Arduino should be the same one used for communications. 
