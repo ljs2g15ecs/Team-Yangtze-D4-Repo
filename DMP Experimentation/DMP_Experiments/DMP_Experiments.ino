@@ -38,7 +38,7 @@ void setup() {
 
     devStatus = mpu.dmpInitialize();
 
-    // supply your own gyro offsets here, scaled for min sensitivity
+    // gyro and accelerometer offsets
     mpu.setXGyroOffset(84);
     mpu.setYGyroOffset(-47);
     mpu.setZGyroOffset(37); 
@@ -46,32 +46,11 @@ void setup() {
     mpu.setZAccelOffset(-639);
     mpu.setZAccelOffset(118); // 1688 factory default for my test chip
 
-//    // make sure it worked (returns 0 if so)
-//    if (devStatus == 0) {
-//        // turn on the DMP, now that it's ready
-//        Serial.println(F("Enabling DMP..."));
-        mpu.setDMPEnabled(true);
-//
-//        // enable Arduino interrupt detection
-//        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
-        attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
-        mpuIntStatus = mpu.getIntStatus();
-//
-//        // set our DMP Ready flag so the main loop() function knows it's okay to use it
-//        Serial.println(F("DMP ready! Waiting for first interrupt..."));
-        dmpReady = true;
-//
-//        // get expected DMP packet size for later comparison
-        packetSize = mpu.dmpGetFIFOPacketSize();
-//    } else {
-//        // ERROR!
-//        // 1 = initial memory load failed
-//        // 2 = DMP configuration updates failed
-//        // (if it's going to break, usually the code will be 1)
-//        Serial.print(F("DMP Initialization failed (code "));
-//        Serial.print(devStatus);
-//        Serial.println(F(")"));
-//    }
+    mpu.setDMPEnabled(true);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+    mpuIntStatus = mpu.getIntStatus();
+    dmpReady = true;
+    packetSize = mpu.dmpGetFIFOPacketSize();
 }
 
 // ================================================================
@@ -79,24 +58,6 @@ void setup() {
 // ================================================================
 
 void loop() {
-    // if programming failed, don't try to do anything
-    //if (!dmpReady) return;
-
-    // wait for MPU interrupt or extra packet(s) available
-    //while (!mpuInterrupt && fifoCount < packetSize) {
-        // other program behavior stuff here
-        // .
-        // .
-        // .
-        // if you are really paranoid you can frequently test in between other
-        // stuff to see if mpuInterrupt is true, and if so, "break;" from the
-        // while() loop to immediately process the MPU data
-        // .
-        // .
-        // .
-    //}
-
-    // reset interrupt flag and get INT_STATUS byte
     mpuInterrupt = false;
     mpuIntStatus = mpu.getIntStatus();
 
@@ -125,12 +86,12 @@ void loop() {
     mpu.dmpGetQuaternion(&q, fifoBuffer);
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-    Serial.print("  ");
-    Serial.print("ypr\t");
+    //Serial.print("  ");
+    //Serial.print("yaw\t");
     Serial.print(ypr[0] * 180/M_PI);
-    Serial.print("\t");
-    Serial.print(ypr[1] * 180/M_PI);
-    Serial.print("\t");
-    Serial.println(ypr[2] * 180/M_PI);
+//    Serial.print("\tpitch\t");
+//    Serial.print(ypr[1] * 180/M_PI);
+//    Serial.print("\troll\t");
+//    Serial.println(ypr[2] * 180/M_PI);
     }
 }

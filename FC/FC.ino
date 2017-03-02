@@ -188,11 +188,11 @@ float pid_x(float meas,float set){
   return (kpx*p_error_x)+(kix*i_error_x)+(kdx*d_error_x);
 }
 
-//void receiveControl(){
-//  Wire.requestFrom(1,4);
-//  while(Wire.available() < 4);
-//  Throttle  = Wire.read();
-//  Roll      = Wire.read();
-//  Pitch     = Wire.read();
-//  Yaw       = Wire.read();
-//}
+void receiveControl(){
+  Wire.requestFrom(1,4);
+  while(Wire.available() < 4);
+  Throttle  = Wire.read();
+  Roll      = Wire.read();
+  Pitch     = Wire.read();
+  Yaw       = Wire.read();
+}
