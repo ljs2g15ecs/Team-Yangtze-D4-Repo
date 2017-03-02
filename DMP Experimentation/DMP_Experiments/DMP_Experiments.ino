@@ -27,13 +27,9 @@ void dmpDataReady() {
 }
 
 void setup() {
-    // join I2C bus (I2Cdev library doesn't do this automatically)
-    #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-        Wire.begin();
-        Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
-    #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-        Fastwire::setup(400, true);
-    #endif
+    // join I2C bus
+    Wire.begin();
+    Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
 
     Serial.begin(115200);
 
@@ -43,12 +39,12 @@ void setup() {
     devStatus = mpu.dmpInitialize();
 
     // supply your own gyro offsets here, scaled for min sensitivity
-    mpu.setXGyroOffset(82);
-    mpu.setYGyroOffset(-46);
-    mpu.setZGyroOffset(39); 
-    //mpu.setZAccelOffset(1181);
-    //mpu.setZAccelOffset(1181);
-    mpu.setZAccelOffset(1181); // 1688 factory default for my test chip
+    mpu.setXGyroOffset(84);
+    mpu.setYGyroOffset(-47);
+    mpu.setZGyroOffset(37); 
+    mpu.setZAccelOffset(-6998);
+    mpu.setZAccelOffset(-639);
+    mpu.setZAccelOffset(118); // 1688 factory default for my test chip
 
 //    // make sure it worked (returns 0 if so)
 //    if (devStatus == 0) {
