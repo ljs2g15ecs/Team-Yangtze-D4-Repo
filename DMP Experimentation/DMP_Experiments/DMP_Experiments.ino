@@ -6,7 +6,7 @@
 
 MPU6050 mpu;
 
-#define INTERRUPT_PIN 7  // use pin 2 on Arduino Uno & most boards
+#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -46,6 +46,8 @@ void setup() {
     mpu.setXGyroOffset(82);
     mpu.setYGyroOffset(-46);
     mpu.setZGyroOffset(39); 
+    //mpu.setZAccelOffset(1181);
+    //mpu.setZAccelOffset(1181);
     mpu.setZAccelOffset(1181); // 1688 factory default for my test chip
 
 //    // make sure it worked (returns 0 if so)

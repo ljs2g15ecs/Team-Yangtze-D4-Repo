@@ -28,13 +28,14 @@ float kpy, kiy, kdy, servo_out_y, measured_y, setpoint_y, prev_error_y, p_error_
 
 int Throttle,Roll, Pitch, Yaw;
 
+#define servoPin 11
 Servo servo;                                                           //Initialize 'servo' as a servo
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  kpx = 1;
-  kix = 1;
-  kdx = 0.01;
+  kpx = 0.7;
+  kix = 0.07;
+  kdx = 0.5;
   setpoint_x = 0;
 
   kpy = 0.7;
@@ -42,8 +43,8 @@ void setup() {
   kdy = 0.2;
   setpoint_y = 0;  
 
-  pinMode(5, OUTPUT);                                                  //Set pin 5 as output
-  servo.attach(5);                                                     //Attach 'pitch servo' to pin 5
+  pinMode(servoPin, OUTPUT);                                                  //Set pin 5 as output
+  servo.attach(servoPin);                                                     //Attach 'pitch servo' to pin 5
   Wire.begin();                                                        //start I2C. No address means master
   Serial.begin(57600);                                               //Serial for debugging
   
@@ -96,8 +97,8 @@ void loop(){
   //Serial.print("  ");
   //Serial.println(filtered_roll);
   
-  receiveControl();
-  servo_out_x = pid_x(filtered_pitch,Throttle);
+  //receiveControl();
+  servo_out_x = pid_x(filtered_roll,15);
   
   if(servo_out_x>180){
     servo_out_x = 180;
@@ -105,8 +106,9 @@ void loop(){
   else if(servo_out_x<0){
     servo_out_x = 0;
   }
-  
-  servo.write(servo_out_x);
+  //if(micros()>1000000){
+    servo.write(servo_out_x);
+  //}
   //Serial.println(Throttle);
   //Serial.print("  ");
   //Serial.print(servo_out_x);
@@ -140,9 +142,7 @@ void setup_IMU_registers(){
   Wire.endTransmission();
 }
 
-void calibrate_MPU6050(){
-  //digitalWrite(5, HIGH);                                               //Turn LED on pin 5 on for duration of startup procedure
-  
+void calibrate_MPU6050(){ 
   //for (int cal_int = 0; cal_int < 10000 ; cal_int ++){                 //Take 10000 samples for a good average reading
   //  read_mpu6050();                                                    //Read from MPU6050
   //  gx_cal += gx;                                                      //Set calibration offsets for x y z
@@ -163,8 +163,6 @@ void calibrate_MPU6050(){
   //Serial.print(gy_cal);
   //Serial.print(" gz_cal:  ");
   //Serial.println(gz_cal);
-  
-  //digitalWrite(5, LOW);                                                //Turn LED off when startup is complete
 }
 
 void read_mpu6050(){
@@ -183,18 +181,18 @@ void read_mpu6050(){
 }
 
 float pid_x(float meas,float set){
-  p_error_x = meas-set;
-  i_error_x += (p_error_x*0.04);
-  d_error_x = (prev_error_x-p_error_x)/0.04;
-  return (kpx*p_error_x)+(kix*i_error_x)-(kdx*d_error_x);
   prev_error_x = p_error_x;
+  p_error_x = set-meas;
+  i_error_x += p_error_x;
+  d_error_x = p_error_x-prev_error_x;
+  return (kpx*p_error_x)+(kix*i_error_x)+(kdx*d_error_x);
 }
 
-void receiveControl(){
-  Wire.requestFrom(1,4);
-  while(Wire.available() < 4);
-  Throttle  = Wire.read();
-  Roll      = Wire.read();
-  Pitch     = Wire.read();
-  Yaw       = Wire.read();
-}
+//void receiveControl(){
+//  Wire.requestFrom(1,4);
+//  while(Wire.available() < 4);
+//  Throttle  = Wire.read();
+//  Roll      = Wire.read();
+//  Pitch     = Wire.read();
+//  Yaw       = Wire.read();
+//}
