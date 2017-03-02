@@ -6,7 +6,6 @@ byte  XYZ[3];                             //  Mapped accelerometer data
 
 volatile boolean s;
 
-
 void setup()
 {
   Serial.begin(9600);                     //  Setup serial with PC for debug
@@ -15,6 +14,12 @@ void setup()
   pinMode(A0, INPUT);                     //  Analog Read Pins
   pinMode(A1, INPUT);
   pinMode(A2, INPUT);
+
+  int i;
+  for(i=0; i<4; i++)
+  {
+    QuadData[i] = 0;
+  }
 
   //  Timer1 setup
 
@@ -44,9 +49,10 @@ void loop()
   recData();
   accelData();
 
-  //printData();
   if(s)
   {
+    Serial.print("\n\tSEND DATA!!!\t\n");
+    printData();
     sendData();
     s = false;
   }
@@ -74,6 +80,7 @@ void sendData()
 
 void printData()
 {
+  /*
   Serial.print("\nThrottle  = ");
   Serial.print(QuadData[0]);
   Serial.print("\t|\tRoll  = ");
@@ -82,15 +89,16 @@ void printData()
   Serial.print(QuadData[2]);
   Serial.print("\t|\tYaw = ");
   Serial.print(QuadData[3]);
+  //*/
 
-  /*
+  ///*
   Serial.print( "\nX: " );
   Serial.print( XYZ[0] );
   Serial.print( "\tY: " );
   Serial.print( XYZ[1] );
   Serial.print( "\tZ: " );
   Serial.print( XYZ[2] );
-  */
+  //*/
 }
 
 void accelData()
