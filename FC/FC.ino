@@ -27,19 +27,24 @@ float kpx, kix, kdx, servo_out_x, measured_x, setpoint_x, prev_error_x, p_error_
 float kpy, kiy, kdy, servo_out_y, measured_y, setpoint_y, prev_error_y, p_error_y, i_error_y, d_error_y;
 
 int set_throttle, set_roll, set_pitch, set_yaw;                                        // setpoint variables to store the angle at which the quad is meant to be at
+float lf_power, rf_power, lb_power, rb_power;
 
 #define lf_pin 11
 Servo lf, rf, lb, rb;                                                           //Initialize the 4 motors as servo outputs
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  kpx = 0.6;
+//  kpx = 0.5;
+//  kix = 0.01;
+//  kdx = 1;
+   
+  kpx = 1.25;
   kix = 0.05;
-  kdx = 0.5;
+  kdx = 0.03;
   setpoint_x = 0;
 
   kpy = 0.7;
-  kiy = 0.07;
+  kiy = 0.05;
   kdy = 0.5;
   setpoint_y = 0;  
 
@@ -85,13 +90,13 @@ void loop(){
   //}
   //Serial.println(Throttle);
   //Serial.print("  ");
-  Serial.print(servo_out_x);
-  Serial.print("\t");
-  Serial.print(p_error_x);
-  Serial.print("\t");
-  Serial.print(i_error_x);
-  Serial.print("\t\t");
-  Serial.println(d_error_x);
+//  Serial.print(servo_out_x);
+//  Serial.print("\t");
+//  Serial.print(p_error_x);
+//  Serial.print("\t");
+//  Serial.print(i_error_x);
+//  Serial.print("\t\t");
+  //Serial.println(d_error_x);
   //Serial.print(" ");
   //Serial.print(Roll);
   //Serial.print(" ");
@@ -164,15 +169,18 @@ void read_mpu6050(){
   gy = Wire.read()<<8|Wire.read();                                 
   gz = Wire.read()<<8|Wire.read();                                 
 }
-
+///////////////////////////////////////////////      PID       //////////////////////////////////////////////////////////////////////////
 float pid_x(float meas,float set){
   prev_error_x = p_error_x;
   p_error_x = set-meas;
-  i_error_x += p_error_x;
-  if(i_error_x>(180/kix)){
-    i_error_x = 180/kix;
+  i_error_x += (p_error_x*0.04);
+  
+  if((i_error_x>(180/kix)) || (i_error_x<(-180/kix))){
+    i_error_x = 0;
   }
-  d_error_x = p_error_x-prev_error_x;
+  
+  d_error_x = (p_error_x-prev_error_x)/0.04;
+  
   return (kpx*p_error_x)+(kix*i_error_x)+(kdx*d_error_x);
 }
 
@@ -228,5 +236,9 @@ void calc_angles(){
   //To dampen the pitch and roll angles a complementary filter is used
   filtered_pitch = (filtered_pitch * 0.9) + (angle_pitch * 0.1);   //Take 90% of the output pitch value and add 10% of the raw pitch value
   filtered_roll = (filtered_roll * 0.9) + (angle_roll * 0.1);      //Take 90% of the output roll value and add 10% of the raw roll value
+}
+
+void mixer(){
+  
 }
 
