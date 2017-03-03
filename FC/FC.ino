@@ -18,15 +18,22 @@ long ax, ay, az, acc_magnitude;
 int temp;
 long gx_cal, gy_cal, gz_cal;
 long loop_timer;
-float angle_pitch, angle_roll;
+float angle_pitch, angle_roll, angle_yaw;
 int angle_pitch_buffer, angle_roll_buffer;
 boolean set_angle;
 float angle_roll_acc, angle_pitch_acc;
 float filtered_pitch, filtered_roll;
 float kpx, kix, kdx, servo_out_x, measured_x, setpoint_x, prev_error_x, p_error_x, i_error_x, d_error_x;
 float kpy, kiy, kdy, servo_out_y, measured_y, setpoint_y, prev_error_y, p_error_y, i_error_y, d_error_y;
+float kpz, kiz, kdz, servo_out_z, measured_z, setpoint_z, prev_error_z, p_error_z, i_error_z, d_error_z;
+float pid_output_x, pid_output_y, pid_output_z;
 
-int set_throttle, set_roll, set_pitch, set_yaw;                                        // setpoint variables to store the angle at which the quad is meant to be at
+
+int pid_max_x = 400;
+int pid_max_y = 400;
+int pid_max_z = 400;
+
+int set_throttle = 90, set_roll=0, set_pitch=0, set_yaw=0;                                        // setpoint variables to store the angle at which the quad is meant to be at
 float lf_power, rf_power, lb_power, rb_power;
 
 #define lf_pin 11
@@ -34,19 +41,21 @@ Servo lf, rf, lb, rb;                                                           
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
-//  kpx = 0.5;
-//  kix = 0.01;
-//  kdx = 1;
-   
-  kpx = 1.25;
-  kix = 0.05;
-  kdx = 0.03;
-  setpoint_x = 0;
+  set_throttle = (1000+(set_throttle*3.137255));
+  kpx = 1.3;
+  kix = 0.04;
+  kdx = 18;
+  //setpoint_x = 0;
 
-  kpy = 0.7;
-  kiy = 0.05;
-  kdy = 0.5;
-  setpoint_y = 0;  
+  kpy = 1.3;
+  kiy = 0.04;
+  kdy = 18;
+//  setpoint_y = 0;
+
+  kpz = 4;
+  kiz = 0.02;
+  kdz = 0;
+ // setpoint_z = 0; 
 
   pinMode(lf_pin, OUTPUT);                                                  //Set pin 5 as output
   lf.attach(lf_pin);                                                        //Attach 'pitch servo' to pin 5
@@ -74,35 +83,28 @@ void loop(){
   //Serial.println(filtered_roll);
   
   //receiveControl();
-  servo_out_x = 90+ pid_x(filtered_pitch,setpoint_x);
-  //servo_out_y = pid_y(filtered_pitch,setpoint_y);
   
-  if(servo_out_x>180){
-    servo_out_x = 180;
-  }
-  else if(servo_out_x<0){
-    servo_out_x = 0;
-  }
-  //if(micros()>1000000){
-    lf.write(servo_out_x);
+  pid_x(filtered_pitch,setpoint_x);
+  pid_y(filtered_roll,setpoint_y);
+  pid_z(angle_yaw,setpoint_z);
+  mix();
+  lf.writeMicroseconds(lf_power);
   
-  
-  //}
-  //Serial.println(Throttle);
-  //Serial.print("  ");
-//  Serial.print(servo_out_x);
-//  Serial.print("\t");
-//  Serial.print(p_error_x);
-//  Serial.print("\t");
-//  Serial.print(i_error_x);
-//  Serial.print("\t\t");
-  //Serial.println(d_error_x);
-  //Serial.print(" ");
-  //Serial.print(Roll);
-  //Serial.print(" ");
-  //Serial.print(Pitch);
-  //Serial.print(" ");
-  //Serial.println(Yaw);
+  Serial.print(lf_power);
+  Serial.print("\t");
+  Serial.print(rf_power);
+  Serial.print("\t");
+  Serial.print(lb_power);
+  Serial.print("\t");
+  Serial.print(rb_power);
+  Serial.print("           "); 
+  Serial.print(set_throttle); 
+  Serial.print("\t"); 
+  Serial.print(pid_output_x);
+  Serial.print("\t");
+  Serial.print(pid_output_y);
+  Serial.print("\t");
+  Serial.println(pid_output_z);
 
   //Serial.println(micros() - loop_timer);
   
@@ -173,33 +175,31 @@ void read_mpu6050(){
 float pid_x(float meas,float set){
   prev_error_x = p_error_x;
   p_error_x = set-meas;
-  i_error_x += (p_error_x*0.04);
-  
-  if((i_error_x>(180/kix)) || (i_error_x<(-180/kix))){
-    i_error_x = 0;
-  }
-  
-  d_error_x = (p_error_x-prev_error_x)/0.04;
-  
-  return (kpx*p_error_x)+(kix*i_error_x)+(kdx*d_error_x);
+  i_error_x += p_error_x;
+  if(i_error_x > pid_max_x) i_error_x = pid_max_x;
+  else if(i_error_x < (-1*pid_max_x)) i_error_x = (-1*pid_max_x);
+  d_error_x = p_error_x-prev_error_x;
+  pid_output_x = (kpx*p_error_x)+(kix*i_error_x)+(kdx*d_error_x);
 }
 
 float pid_y(float meas,float set){
   prev_error_y = p_error_y;
   p_error_y = set-meas;
   i_error_y += p_error_y;
+  if(i_error_y > pid_max_y) i_error_y = pid_max_y;
+  else if(i_error_y < (-1*pid_max_y)) i_error_y = (-1*pid_max_y);
   d_error_y = p_error_y-prev_error_y;
-  return (kpy*p_error_y)+(kiy*i_error_y)+(kdy*d_error_y);
+  pid_output_y = (kpy*p_error_y)+(kiy*i_error_y)+(kdy*d_error_y);
 }
 
-
-void receiveControl(){
-  Wire.requestFrom(1,4);
-  while(Wire.available() < 4);
-  set_throttle  = Wire.read();
-  set_roll      = Wire.read();
-  set_pitch     = Wire.read();
-  set_yaw       = Wire.read();
+float pid_z(float meas,float set){
+  prev_error_z = p_error_z;
+  p_error_z = set-meas;
+  i_error_z += p_error_z;
+  if(i_error_z > pid_max_z) i_error_z = pid_max_z;
+  else if(i_error_z < (-1*pid_max_z)) i_error_z = (-1*pid_max_z);
+  d_error_z = p_error_z-prev_error_z;
+  pid_output_z = (kpz*p_error_z)+(kiz*i_error_z)+(kdz*d_error_z);
 }
 
 void calc_angles(){
@@ -207,7 +207,8 @@ void calc_angles(){
   // 0.000061068 = (1 / 250Hz)/ 65.5 for 500 degrees per second gyro configuration
   // 0.000121951 = (1 / 250Hz)/ 32.8 for 1000 degrees per second gyro configuration
   angle_pitch += gx * 0.000121951;                                        //Calculate the traveled pitch angle and add this to the angle_pitch variable
-  angle_roll += gy * 0.000121951;                                         //Calculate the traveled roll angle and add this to the angle_roll variable
+  angle_roll += gy * 0.000121951;                                        //Calculate the traveled roll angle and add this to the angle_roll variable
+  angle_yaw += gz * 0.000121951;
 
   //0.000002128 = 0.000121951 * (3.142(PI) / 180degr) for 500 degrees per second gyro configuration
   //0.000001065 = 0.000061068 * (3.142(PI) / 180degr) for 1000 degrees per second gyro configuration (The Arduino sin function is in radians)
@@ -238,7 +239,30 @@ void calc_angles(){
   filtered_roll = (filtered_roll * 0.9) + (angle_roll * 0.1);      //Take 90% of the output roll value and add 10% of the raw roll value
 }
 
-void mixer(){
+void receiveControl(){
+  Wire.requestFrom(1,4);
+  while(Wire.available() < 4);
+  set_throttle  = Wire.read();
+  set_roll      = Wire.read();
+  set_pitch     = Wire.read();
+  set_yaw       = Wire.read();
+
+}
+
+void mix(){
+  rf_power = set_throttle - pid_output_x + pid_output_y - pid_output_z; //Calculate the pulse for esc 1 (front-right - CCW)
+  rb_power = set_throttle + pid_output_x + pid_output_y + pid_output_z; //Calculate the pulse for esc 2 (rear-right - CW)
+  lb_power = set_throttle + pid_output_x - pid_output_y - pid_output_z; //Calculate the pulse for esc 3 (rear-left - CCW)
+  lf_power = set_throttle - pid_output_x - pid_output_y + pid_output_z; //Calculate the pulse for esc 4 (front-left - CW)
   
+  if(rf_power > 2000)rf_power = 2000;                                           //Limit the esc-1 pulse to 2000us.
+  if(rb_power > 2000)rb_power = 2000;                                           //Limit the esc-2 pulse to 2000us.
+  if(lb_power > 2000)lb_power = 2000;                                           //Limit the esc-3 pulse to 2000us.
+  if(lf_power > 2000)lf_power = 2000; 
+
+  if (rf_power < 1000) rf_power = 1000;                                         //Keep the motors running.
+  if (rb_power < 1000) rb_power = 1000;                                         //Keep the motors running.
+  if (lb_power < 1000) lb_power = 1000;                                         //Keep the motors running.
+  if (lf_power < 1000) lf_power = 1000;   
 }
 
