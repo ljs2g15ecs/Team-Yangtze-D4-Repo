@@ -27,9 +27,14 @@ void dmpDataReady() {
 }
 
 void setup() {
-    // join I2C bus
-    Wire.begin();
-    Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
+
+    // join I2C bus (I2Cdev library doesn't do this automatically)
+    #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+        Wire.begin();
+        Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
+    #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+        Fastwire::setup(400, true);
+    #endif
 
     Serial.begin(115200);
 
@@ -86,12 +91,13 @@ void loop() {
     mpu.dmpGetQuaternion(&q, fifoBuffer);
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-    //Serial.print("  ");
-    //Serial.print("yaw\t");
+
+    Serial.print("  ");
+    Serial.print("ypr\t");
     Serial.print(ypr[0] * 180/M_PI);
-//    Serial.print("\tpitch\t");
-//    Serial.print(ypr[1] * 180/M_PI);
-//    Serial.print("\troll\t");
-//    Serial.println(ypr[2] * 180/M_PI);
+    Serial.print("\t");
+    Serial.print(ypr[1] * 180/M_PI);
+    Serial.print("\t");
+    Serial.println(ypr[2] * 180/M_PI);
     }
 }
